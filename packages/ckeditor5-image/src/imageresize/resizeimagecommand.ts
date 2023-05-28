@@ -10,6 +10,7 @@
 import { Command } from 'ckeditor5/src/core';
 
 import type ImageUtils from '../imageutils';
+import {Element, ViewElement} from "@ckeditor/ckeditor5-engine";
 
 /**
  * The resize image command. Currently, it only supports the width attribute.
@@ -38,7 +39,16 @@ export default class ResizeImageCommand extends Command {
 		} else {
 			this.value = {
 				width: element.getAttribute( 'resizedWidth' ) as string,
-				height: null
+				height: element.getAttribute( 'resizedHeight' ) as string
+			};
+		}
+
+		if ( !element || !element.hasAttribute( 'resizedHeight' ) ) {
+			this.value = null;
+		} else {
+			this.value = {
+				width: element.getAttribute( 'resizedWidth' ) as string,
+				height: element.getAttribute( 'resizedHeight' ) as string
 			};
 		}
 	}
@@ -66,12 +76,21 @@ export default class ResizeImageCommand extends Command {
 
 		this.value = {
 			width: options.width,
-			height: null
+			height: 'auto'
 		};
 
 		if ( imageElement ) {
+			/* MODIFICA GG: Recupero altezza*/
+			const domConverter = editor.editing.view.domConverter;
+			const mapper = editor.editing.mapper;
+			const domView = domConverter.mapViewToDom( mapper.toViewElement( imageElement as Element )! ) as HTMLElement;
+
 			model.change( writer => {
 				writer.setAttribute( 'resizedWidth', options.width, imageElement );
+				writer.setAttribute( 'resizedHeight', domView.clientHeight, imageElement );
+
+				writer.setAttribute( 'width', options.width?.replace( 'px', '' ), imageElement );
+				writer.setAttribute( 'height', domView.clientHeight, imageElement );
 			} );
 		}
 	}
